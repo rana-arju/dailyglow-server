@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String     @id @default(auto()) @map("_id") @db.ObjectId
+  firstName         String
+  lastName          String
+  email             String     @unique
+  password          String?
+  profileView       Int        @default(0)
+  image             String?
+  isEmailVerified   Boolean    @default(false)
+  isVerified        Boolean    @default(false)
+  role              Role       @default(USER)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  status            UserStatus @default(ACTIVE)
+  passwordChangedAt DateTime?
+  fcmToken          String?
+  accountWith       String?
+  isDeleted         Boolean    @default(false)
+
+  otps OTP[]
+
+  @@map("users")
+}
+
+model OTP {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  otpCode   String
+  expiry    DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model ContactFolder {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  contacts Contact[]
+
+  @@map("contact_folders")
+}
+
+model Contact {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  email           String        @unique
+  firstName       String?
+  lastName        String?
+  folderId        String        @db.ObjectId
+  userId          String?       @db.ObjectId
+  status          ContactStatus @default(SUBSCRIBED)
+  unsubscribedAt  DateTime?
+  unsubscribeToken String?      @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  folder     ContactFolder       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  recipients CampaignRecipient[]
+
+  @@index([folderId])
+  @@index([status])
+  @@map("contacts")
+}
+
+enum ContactStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+  BOUNCED
+  COMPLAINED
+}
+
+model Campaign {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  subject         String
+  previewText     String?
+  fromName        String
+  fromEmail       String
+  replyTo         String?
+  templateJson    String         @db.String
+  htmlContent     String?        @db.String
+  status          CampaignStatus @default(DRAFT)
+  totalRecipients Int            @default(0)
+  sentCount       Int            @default(0)
+  openCount       Int            @default(0)
+  clickCount      Int            @default(0)
+  unsubscribeCount Int           @default(0)
+  bounceCount     Int            @default(0)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  recipients CampaignRecipient[]
+
+  @@map("campaigns")
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  FAILED
+}
+
+model CampaignRecipient {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId     String    @db.ObjectId
+  contactId      String    @db.ObjectId
+  messageId      String?
+  trackingToken  String    @unique
+  delivered      Boolean   @default(false)
+  opened         Boolean   @default(false)
+  clicked        Boolean   @default(false)
+  bounced        Boolean   @default(false)
+  complained     Boolean   @default(false)
+  unsubscribed   Boolean   @default(false)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  unsubscribedAt DateTime?
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  clicks   CampaignClick[]
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId])
+  @@index([contactId])
+  @@index([messageId])
+  @@map("campaign_recipients")
+}
+
+model CampaignClick {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipientId String   @db.ObjectId
+  url         String
+  clickedAt   DateTime @default(now())
+
+  recipient CampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@map("campaign_clicks")
+}
+
+model EmailTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  thumbnail   String?
+  blocks      String   @db.String // JSON string of template blocks
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model Order {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  fullName      String
+  phoneNumber   String
+  city          String
+  thanaUpazila  String?
+  address       String
+  productName   String
+  productPrice  Float
+  quantity      Int
+  discount      Float       @default(0)
+  deliveryFee   Float       @default(0)
+  subtotal      Float
+  total         Float
+  status        OrderStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
