@@ -194,8 +194,25 @@ model EmailTemplate {
   @@map("email_templates")
 }
 
+model Customer {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  fullName    String
+  phoneNumber String   @unique
+  email       String?
+  totalOrders Int      @default(0)
+  totalSpent  Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("customers")
+}
+
 model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber   String?
+  customerId    String?     @db.ObjectId
   fullName      String
   phoneNumber   String
   city          String
@@ -212,6 +229,12 @@ model Order {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([phoneNumber])
+  @@index([status])
+  @@index([orderNumber])
   @@map("orders")
 }
 
