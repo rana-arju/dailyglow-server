@@ -4,6 +4,7 @@ const getAllCustomers = async (filters?: {
   page?: number;
   limit?: number;
   search?: string;
+  dateFilter?: 'today' | 'week' | 'month' | '3months' | '6months' | 'year';
 }) => {
   const page = filters?.page || 1;
   const limit = filters?.limit || 10;
@@ -11,11 +12,21 @@ const getAllCustomers = async (filters?: {
 
   const where: any = {};
   
+  // Search filter
   if (filters?.search) {
     where.OR = [
       { fullName: { contains: filters.search, mode: 'insensitive' } },
       { phoneNumber: { contains: filters.search } },
     ];
+  }
+
+  // Date filter
+  if (filters?.dateFilter) {
+    const dateRange = getDateRange(filters.dateFilter);
+    where.createdAt = {
+      gte: dateRange.startDate,
+      lte: dateRange.endDate,
+    };
   }
 
   const [customers, total] = await Promise.all([
@@ -33,6 +44,10 @@ const getAllCustomers = async (filters?: {
     prisma.customer.count({ where }),
   ]);
 
+  // Calculate stats for filtered customers
+  const totalOrders = customers.reduce((sum, customer) => sum + customer.totalOrders, 0);
+  const totalRevenue = customers.reduce((sum, customer) => sum + customer.totalSpent, 0);
+
   return {
     data: customers,
     meta: {
@@ -41,7 +56,63 @@ const getAllCustomers = async (filters?: {
       total,
       totalPage: Math.ceil(total / limit),
     },
+    stats: {
+      totalOrders,
+      totalRevenue,
+    },
   };
+};
+
+const getDateRange = (filter: 'today' | 'week' | 'month' | '3months' | '6months' | 'year') => {
+  // Get current UTC time
+  const now = new Date();
+  
+  // Convert to BD timezone (UTC+6)
+  // BD time = UTC time + 6 hours
+  const bdOffset = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+  const bdNow = new Date(now.getTime() + bdOffset);
+  
+  // Create start date in BD timezone
+  let startDate = new Date(bdNow);
+  
+  switch (filter) {
+    case 'today':
+      // Start of today in BD time (12:01 AM)
+      startDate.setHours(0, 1, 0, 0);
+      break;
+    case 'week':
+      startDate.setDate(bdNow.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case 'month':
+      startDate.setMonth(bdNow.getMonth() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case '3months':
+      startDate.setMonth(bdNow.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case '6months':
+      startDate.setMonth(bdNow.getMonth() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case 'year':
+      startDate.setFullYear(bdNow.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+  }
+  
+  // End date is current BD time (11:59 PM for today)
+  let endDate = new Date(bdNow);
+  if (filter === 'today') {
+    endDate.setHours(23, 59, 59, 999);
+  }
+  
+  // Convert BD times back to UTC for database query
+  const startDateUTC = new Date(startDate.getTime() - bdOffset);
+  const endDateUTC = new Date(endDate.getTime() - bdOffset);
+  
+  return { startDate: startDateUTC, endDate: endDateUTC };
 };
 
 const getCustomerById = async (id: string) => {

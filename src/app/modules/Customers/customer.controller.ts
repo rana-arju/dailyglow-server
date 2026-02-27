@@ -5,12 +5,13 @@ import sendResponse from '../../helpers/sendResponse';
 import { CustomerService } from './customer.service';
 
 const getAllCustomers = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit, search } = req.query;
+  const { page, limit, search, dateFilter } = req.query;
 
   const filters = {
     page: page ? parseInt(page as string) : undefined,
     limit: limit ? parseInt(limit as string) : undefined,
     search: search as string,
+    dateFilter: dateFilter as 'today' | 'week' | 'month' | '3months' | '6months' | 'year',
   };
 
   const result = await CustomerService.getAllCustomers(filters);
@@ -21,6 +22,7 @@ const getAllCustomers = catchAsync(async (req: Request, res: Response) => {
     message: 'Customers retrieved successfully',
     data: result.data,
     meta: result.meta,
+    stats: result.stats,
   });
 });
 

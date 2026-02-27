@@ -25,6 +25,9 @@ router.patch(
   OrderController.updateOrderStatus
 );
 
+// Update order (admin route - add auth middleware if needed)
+router.patch('/:id', OrderController.updateOrder);
+
 // Delete order (admin route - add auth middleware if needed)
 router.delete('/:id', OrderController.deleteOrder);
 
