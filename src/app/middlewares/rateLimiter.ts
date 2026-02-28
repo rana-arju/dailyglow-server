@@ -156,7 +156,7 @@ export const authenticatedRateLimit = rateLimit({
 
 // Cleanup function for graceful shutdown
 export const cleanup = () => {
-  console.log('Rate limiter cleanup completed');
+  // Rate limiter cleanup completed
 };
 
 // Export all rate limiters

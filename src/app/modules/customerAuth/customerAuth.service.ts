@@ -16,6 +16,7 @@ const loginCustomer = async (payload: ICustomerLogin) => {
       phoneNumber: normalizedPhone,
     },
   });
+  
 
   if (!customerData) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Customer not found');

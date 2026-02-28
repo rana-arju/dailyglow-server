@@ -125,7 +125,7 @@ app.use(xssProtection);
 app.get('/', (req: Request, res: Response) => {
   res.send({
     success: true,
-    Message: 'Email marketing System is running...',
+    Message: 'Daily Glow Server is running...',
     data: {
       Developer: 'Rana Arju',
       version: 1.0,

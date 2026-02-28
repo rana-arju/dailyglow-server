@@ -68,7 +68,6 @@ export const uploadToS3 = async (
       key: key,
     };
   } catch (error: any) {
-    console.error('S3 Upload Error:', error);
     return {
       success: false,
       error: error.message || 'Failed to upload to S3',
@@ -96,7 +95,6 @@ export const deleteFromS3 = async (
 
     return { success: true };
   } catch (error: any) {
-    console.error('S3 Delete Error:', error);
     return {
       success: false,
       error: error.message || 'Failed to delete from S3',
@@ -125,17 +123,14 @@ export const uploadAndCleanup = async (
       try {
         if (fs.existsSync(localFilePath)) {
           fs.unlinkSync(localFilePath);
-          console.log(`Local file deleted: ${localFilePath}`);
         }
       } catch (deleteError: any) {
-        console.error('Error deleting local file:', deleteError);
         // Don't fail the upload if local deletion fails
       }
     }
 
     return uploadResult;
   } catch (error: any) {
-    console.error('Upload and cleanup error:', error);
     return {
       success: false,
       error: error.message || 'Failed to upload and cleanup',
@@ -160,7 +155,6 @@ export const extractS3Key = (s3Url: string): string | null => {
     // Remove leading slash and return the key
     return pathname.startsWith('/') ? pathname.substring(1) : pathname;
   } catch (error) {
-    console.error('Error extracting S3 key:', error);
     return null;
   }
 };

@@ -41,7 +41,7 @@ export const parameterPollutionProtection = hpp({
 // MongoDB injection protection
 export const mongoSanitization = mongoSanitize({
   onSanitize: ({ req, key }: { req: Request, key: string }) => {
-    console.warn(`MongoDB injection attempt detected: ${key} from ${req.ip}`);
+    // MongoDB injection attempt detected
   },
 });
 
@@ -229,7 +229,6 @@ export const ipWhitelist = (allowedIPs: string[] = []) => {
     const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     
     if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP || '')) {
-      console.warn(`Access denied for IP: ${clientIP} on ${req.path}`);
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -261,7 +260,7 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
     
     // Log suspicious requests
     if (res.statusCode >= 400 || duration > 5000) {
-      console.warn('Security event:', logData);
+      // Security event logged
     }
   });
   

@@ -35,7 +35,7 @@ const seedSuperAdmin = async () => {
       return;
     }
   } catch (error) {
-    console.error('Error seeding Super Admin:', error);
+    // Error seeding Super Admin
   }
 };
 

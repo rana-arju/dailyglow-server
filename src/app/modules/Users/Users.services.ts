@@ -198,7 +198,6 @@ const updateMyProfileImage = async (userId: string, payload: any, file: any) => 
       const oldS3Key = extractS3Key(existingUser.image);
       if (oldS3Key) {
         await deleteFromS3(oldS3Key, bucketName);
-        console.log(`Old profile image deleted from S3: ${oldS3Key}`);
       }
     }
   }
@@ -321,7 +320,6 @@ const getUserProfileStats = async (userId: string) => {
       status: user.status,
     };
   } catch (error) {
-    console.error('Error fetching user profile stats:', error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch user profile stats');
   }
 };

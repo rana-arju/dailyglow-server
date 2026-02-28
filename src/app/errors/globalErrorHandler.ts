@@ -20,8 +20,6 @@ const logSecurityError = (error: any, req: Request, errorId: string) => {
     stack: config.env !== 'production' ? error.stack : undefined
   };
   
-  console.error('Application Error:', logData);
-  
   // In production, you might want to send this to a logging service
   // like CloudWatch, Sentry, or similar
 };

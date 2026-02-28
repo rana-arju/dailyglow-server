@@ -294,8 +294,6 @@ const logSecurityEvent = (eventType: string, details: Record<string, any>) => {
     severity: getSeverityLevel(eventType)
   };
   
-  console.warn('Security Event:', logEntry);
-  
   // In production, you might want to send this to a security monitoring service
   // or store in a dedicated security logs table
 };
