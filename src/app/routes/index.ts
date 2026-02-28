@@ -5,6 +5,8 @@ import { UsersRoutes } from '../modules/Users/Users.route';
 import { AdminRoutes } from '../modules/Admin/Admin.route';
 import { OrderRoutes } from '../modules/Orders/order.routes';
 import { CustomerRoutes } from '../modules/Customers/customer.routes';
+import { CustomerAuthRoutes } from '../modules/customerAuth/customerAuth.routes';
+import { DashboardRoutes } from '../modules/Dashboard';
 
 const router = express.Router();
 
@@ -14,6 +16,10 @@ const moduleRoutes = [
     route: AuthRouters,
   },
   {
+    path: '/customer-auth',
+    route: CustomerAuthRoutes,
+  },
+  {
     path: '/users',
     route: UsersRoutes,
   },
@@ -21,7 +27,10 @@ const moduleRoutes = [
     path: '/admins',
     route: AdminRoutes,
   },
-
+  {
+    path: '/dashboard',
+    route: DashboardRoutes,
+  },
 
   {
     path: '/orders',

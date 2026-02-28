@@ -3,6 +3,7 @@ import { ICreateOrder } from './order.interface';
 import { OrderStatus } from '@prisma/client';
 import { CustomerService } from '../Customers/customer.service';
 import { generateUniqueOrderId } from '../../utils/generateOrderId';
+import { generateRandomPassword, normalizePhoneNumber } from '../../utils/customerUtils';
 
 const createOrder = async (orderData: ICreateOrder) => {
   const discount = orderData.discount || 0;
@@ -29,16 +30,21 @@ const createOrder = async (orderData: ICreateOrder) => {
     });
   }
 
+  const normalizedPhone = normalizePhoneNumber(orderData.phoneNumber);
+
   // Find or create customer by phone number
   let customer = await CustomerService.getCustomerByPhoneNumber(
-    orderData.phoneNumber
+    normalizedPhone
   );
 
   if (!customer) {
+    // Generate random 8-digit password
+    const randomPassword = generateRandomPassword(8);
     // Create new customer
     customer = await CustomerService.createCustomer({
       fullName: orderData.fullName,
-      phoneNumber: orderData.phoneNumber,
+      phoneNumber: normalizedPhone,
+      password: randomPassword,
     });
   }
 
@@ -48,7 +54,7 @@ const createOrder = async (orderData: ICreateOrder) => {
       orderNumber,
       customerId: customer.id,
       fullName: orderData.fullName,
-      phoneNumber: orderData.phoneNumber,
+      phoneNumber: normalizedPhone,
       city: orderData.city,
       thanaUpazila: orderData.thanaUpazila,
       address: orderData.address,

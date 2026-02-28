@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { normalizePhoneNumber } from '../../utils/customerUtils';
 
 const getAllCustomers = async (filters?: {
   page?: number;
@@ -14,11 +15,14 @@ const getAllCustomers = async (filters?: {
   
   // Search filter
   if (filters?.search) {
+    const searchTerm = filters.search;
+    const normalizedSearch = normalizePhoneNumber(searchTerm);
     where.OR = [
-      { fullName: { contains: filters.search, mode: 'insensitive' } },
-      { phoneNumber: { contains: filters.search } },
+      { fullName: { contains: searchTerm, mode: 'insensitive' } },
+      { phoneNumber: { contains: normalizedSearch || searchTerm } },
     ];
   }
+// ... (rest of the code remains similar, I'll provide full replacement for clarity or use multi_replace if needed)
 
   // Date filter
   if (filters?.dateFilter) {
@@ -129,8 +133,9 @@ const getCustomerById = async (id: string) => {
 };
 
 const getCustomerByPhoneNumber = async (phoneNumber: string) => {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const customer = await prisma.customer.findUnique({
-    where: { phoneNumber },
+    where: { phoneNumber: normalizedPhone },
   });
 
   return customer;
@@ -139,12 +144,15 @@ const getCustomerByPhoneNumber = async (phoneNumber: string) => {
 const createCustomer = async (data: {
   fullName: string;
   phoneNumber: string;
+  password?: string;
   email?: string;
 }) => {
+  const normalizedPhone = normalizePhoneNumber(data.phoneNumber);
   const customer = await prisma.customer.create({
     data: {
       fullName: data.fullName,
-      phoneNumber: data.phoneNumber,
+      phoneNumber: normalizedPhone,
+      password: data.password,
       email: data.email,
     },
   });

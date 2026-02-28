@@ -65,6 +65,7 @@ model Customer {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   fullName    String
   phoneNumber String   @unique
+  password    String?
   email       String?
   totalOrders Int      @default(0)
   totalSpent  Float    @default(0)
