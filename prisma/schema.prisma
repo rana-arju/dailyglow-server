@@ -78,7 +78,7 @@ model Customer {
 
 model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  orderNumber   String?
+  orderNumber   String?     @unique
   customerId    String?     @db.ObjectId
   fullName      String
   phoneNumber   String
@@ -87,6 +87,7 @@ model Order {
   address       String
   productName   String
   productPrice  Float
+  originalPrice Float?
   quantity      Int
   discount      Float       @default(0)
   deliveryFee   Float       @default(0)
@@ -101,7 +102,6 @@ model Order {
   @@index([customerId])
   @@index([phoneNumber])
   @@index([status])
-  @@index([orderNumber])
   @@map("orders")
 }
 

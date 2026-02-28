@@ -6,6 +6,7 @@ export interface ICreateOrder {
   address: string;
   productName: string;
   productPrice: number;
+  originalPrice?: number;
   quantity: number;
   discount?: number;
   deliveryFee?: number;

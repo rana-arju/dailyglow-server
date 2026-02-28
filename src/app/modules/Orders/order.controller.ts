@@ -16,10 +16,12 @@ const createOrder = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllOrders = catchAsync(async (req: Request, res: Response) => {
-  const { status, page, limit } = req.query;
+  const { status, search, dateFilter, page, limit } = req.query;
 
   const filters = {
     status: status as string,
+    search: search as string,
+    dateFilter: dateFilter as 'today' | 'week' | 'month' | '3months' | '6months' | 'year',
     page: page ? parseInt(page as string) : undefined,
     limit: limit ? parseInt(limit as string) : undefined,
   };
@@ -32,6 +34,7 @@ const getAllOrders = catchAsync(async (req: Request, res: Response) => {
     message: 'Orders retrieved successfully',
     data: result.data,
     meta: result.meta,
+    stats: result.stats,
   });
 });
 
@@ -70,6 +73,18 @@ const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateOrder = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await OrderService.updateOrder(id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Order updated successfully',
+    data: result,
+  });
+});
+
 const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await OrderService.deleteOrder(id);
@@ -87,5 +102,6 @@ export const OrderController = {
   getAllOrders,
   getOrderById,
   updateOrderStatus,
+  updateOrder,
   deleteOrder,
 };

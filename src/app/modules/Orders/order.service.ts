@@ -54,6 +54,7 @@ const createOrder = async (orderData: ICreateOrder) => {
       address: orderData.address,
       productName: orderData.productName,
       productPrice: orderData.productPrice,
+      originalPrice: orderData.originalPrice,
       quantity: orderData.quantity,
       discount,
       deliveryFee,
@@ -70,6 +71,8 @@ const createOrder = async (orderData: ICreateOrder) => {
 
 const getAllOrders = async (filters?: {
   status?: string;
+  search?: string;
+  dateFilter?: 'today' | 'week' | 'month' | '3months' | '6months' | 'year';
   page?: number;
   limit?: number;
 }) => {
@@ -78,8 +81,28 @@ const getAllOrders = async (filters?: {
   const skip = (page - 1) * limit;
 
   const where: any = {};
+  
+  // Status filter
   if (filters?.status) {
     where.status = filters.status;
+  }
+
+  // Search filter (orderNumber, fullName, phoneNumber)
+  if (filters?.search) {
+    where.OR = [
+      { orderNumber: { contains: filters.search, mode: 'insensitive' } },
+      { fullName: { contains: filters.search, mode: 'insensitive' } },
+      { phoneNumber: { contains: filters.search } },
+    ];
+  }
+
+  // Date filter
+  if (filters?.dateFilter) {
+    const dateRange = getDateRange(filters.dateFilter);
+    where.createdAt = {
+      gte: dateRange.startDate,
+      lte: dateRange.endDate,
+    };
   }
 
   const [orders, total] = await Promise.all([
@@ -103,6 +126,15 @@ const getAllOrders = async (filters?: {
     prisma.order.count({ where }),
   ]);
 
+  // Calculate stats for filtered orders
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalProfit = orders.reduce((sum, order) => {
+    if (order.originalPrice) {
+      return sum + (order.total - (order.originalPrice * order.quantity));
+    }
+    return sum;
+  }, 0);
+
   return {
     data: orders,
     meta: {
@@ -111,7 +143,63 @@ const getAllOrders = async (filters?: {
       total,
       totalPage: Math.ceil(total / limit),
     },
+    stats: {
+      totalRevenue,
+      totalProfit,
+    },
   };
+};
+
+const getDateRange = (filter: 'today' | 'week' | 'month' | '3months' | '6months' | 'year') => {
+  // Get current UTC time
+  const now = new Date();
+  
+  // Convert to BD timezone (UTC+6)
+  // BD time = UTC time + 6 hours
+  const bdOffset = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+  const bdNow = new Date(now.getTime() + bdOffset);
+  
+  // Create start date in BD timezone
+  let startDate = new Date(bdNow);
+  
+  switch (filter) {
+    case 'today':
+      // Start of today in BD time (12:01 AM)
+      startDate.setHours(0, 1, 0, 0);
+      break;
+    case 'week':
+      startDate.setDate(bdNow.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case 'month':
+      startDate.setMonth(bdNow.getMonth() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case '3months':
+      startDate.setMonth(bdNow.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case '6months':
+      startDate.setMonth(bdNow.getMonth() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case 'year':
+      startDate.setFullYear(bdNow.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+  }
+  
+  // End date is current BD time (11:59 PM for today)
+  let endDate = new Date(bdNow);
+  if (filter === 'today') {
+    endDate.setHours(23, 59, 59, 999);
+  }
+  
+  // Convert BD times back to UTC for database query
+  const startDateUTC = new Date(startDate.getTime() - bdOffset);
+  const endDateUTC = new Date(endDate.getTime() - bdOffset);
+  
+  return { startDate: startDateUTC, endDate: endDateUTC };
 };
 
 const getOrderById = async (id: string) => {
@@ -142,6 +230,15 @@ const updateOrderStatus = async (id: string, status: OrderStatus) => {
   return order;
 };
 
+const updateOrder = async (id: string, updateData: Partial<ICreateOrder>) => {
+  const order = await prisma.order.update({
+    where: { id },
+    data: updateData,
+  });
+
+  return order;
+};
+
 const deleteOrder = async (id: string) => {
   const order = await prisma.order.delete({
     where: { id },
@@ -155,5 +252,6 @@ export const OrderService = {
   getAllOrders,
   getOrderById,
   updateOrderStatus,
+  updateOrder,
   deleteOrder,
 };
