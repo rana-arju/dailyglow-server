@@ -79,7 +79,7 @@ model Customer {
 
 model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  orderNumber   String?     @unique
+  orderNumber   String      @unique
   customerId    String?     @db.ObjectId
   fullName      String
   phoneNumber   String
@@ -95,10 +95,12 @@ model Order {
   subtotal      Float
   total         Float
   status        OrderStatus @default(PENDING)
+  statusNote    String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shipment Shipment?
 
   @@index([customerId])
   @@index([phoneNumber])
@@ -113,4 +115,91 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+model Shipment {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  orderId           String    @unique @db.ObjectId
+  provider          String    @default("STEADFAST")
+  consignmentId     String?   @unique
+  trackingCode      String?
+  invoice           String    @unique
+  recipientName     String
+  recipientPhone    String
+  alternativePhone  String?
+  recipientEmail    String?
+  recipientAddress  String
+  codAmount         Float
+  deliveryCharge    Float?
+  deliveryStatus    String    @default("in_review")
+  trackingMessage   String?
+  note              String?
+  itemDescription   String?
+  totalLot          Int?
+  deliveryType      Int       @default(0)
+  assignedToName    String?
+  assignedToPhone   String?
+  assignedToHub     String?
+  internalNote      String?
+  lastUpdatedAt     DateTime?
+  providerPayload   Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  courierEvents CourierEvent[]
+
+  @@index([trackingCode])
+  @@index([deliveryStatus])
+  @@map("shipments")
+}
+
+model CourierEvent {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  shipmentId         String   @db.ObjectId
+  notificationType   String
+  status             String?
+  trackingMessage    String?
+  codAmount          Float?
+  deliveryCharge     Float?
+  updatedAt          DateTime?
+  rawPayload         Json
+  createdAt          DateTime @default(now())
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([notificationType])
+  @@map("courier_events")
+}
+
+model CourierBalanceSnapshot {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  provider       String   @default("STEADFAST")
+  currentBalance Float
+  rawPayload     Json?
+  fetchedAt      DateTime @default(now())
+
+  @@index([provider])
+  @@map("courier_balance_snapshots")
+}
+
+model WithdrawalRequest {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  provider  String            @default("STEADFAST")
+  amount    Float
+  status    WithdrawalStatus  @default(REQUESTED)
+  note      String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([status])
+  @@map("withdrawal_requests")
+}
+
+enum WithdrawalStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  REJECTED
 }

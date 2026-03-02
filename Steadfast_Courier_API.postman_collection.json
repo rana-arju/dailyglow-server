@@ -1,0 +1,270 @@
+{
+  "info": {
+    "name": "Steadfast Courier API",
+    "description": "Complete API collection for Steadfast courier integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api/courier",
+      "type": "string"
+    },
+    {
+      "key": "webhook_secret",
+      "value": "your-webhook-secret-here",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipment_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Get Shipment Review Data",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/shipments/review/{{order_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["shipments", "review", "{{order_id}}"]
+        },
+        "description": "Get prefilled shipment data from an order for review"
+      }
+    },
+    {
+      "name": "2. Create Shipment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"invoice\": \"INV-20250302-TEST01\",\n  \"recipient_name\": \"John Doe\",\n  \"recipient_phone\": \"01712345678\",\n  \"alternative_phone\": \"01812345678\",\n  \"recipient_email\": \"john@example.com\",\n  \"recipient_address\": \"House 10, Road 5, Dhanmondi, Dhaka-1209\",\n  \"cod_amount\": 1500,\n  \"note\": \"Deliver before 5 PM\",\n  \"item_description\": \"Beauty Products\",\n  \"total_lot\": 2,\n  \"delivery_type\": 0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/shipments",
+          "host": ["{{base_url}}"],
+          "path": ["shipments"]
+        },
+        "description": "Create a new shipment in Steadfast"
+      }
+    },
+    {
+      "name": "3. Get All Shipments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/shipments?page=1&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["shipments"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "deliveryStatus",
+              "value": "in_review",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Get paginated list of all shipments"
+      }
+    },
+    {
+      "name": "4. Get Shipment by Order ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/shipments/order/{{order_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["shipments", "order", "{{order_id}}"]
+        },
+        "description": "Get detailed shipment information including courier events"
+      }
+    },
+    {
+      "name": "5. Sync Shipment Status",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/shipments/{{shipment_id}}/sync",
+          "host": ["{{base_url}}"],
+          "path": ["shipments", "{{shipment_id}}", "sync"]
+        },
+        "description": "Manually sync shipment status from Steadfast"
+      }
+    },
+    {
+      "name": "6. Assign Delivery Man",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"shipmentId\": \"{{shipment_id}}\",\n  \"assignedToName\": \"Delivery Man Name\",\n  \"assignedToPhone\": \"01712345678\",\n  \"assignedToHub\": \"Dhanmondi Hub\",\n  \"internalNote\": \"Handle with care\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/shipments/assign-delivery-man",
+          "host": ["{{base_url}}"],
+          "path": ["shipments", "assign-delivery-man"]
+        },
+        "description": "Assign internal delivery man to a shipment"
+      }
+    },
+    {
+      "name": "7. Get Balance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/balance",
+          "host": ["{{base_url}}"],
+          "path": ["balance"]
+        },
+        "description": "Get current Steadfast account balance"
+      }
+    },
+    {
+      "name": "8. Create Withdrawal Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 5000,\n  \"note\": \"Monthly withdrawal\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/withdrawals",
+          "host": ["{{base_url}}"],
+          "path": ["withdrawals"]
+        },
+        "description": "Create a withdrawal request"
+      }
+    },
+    {
+      "name": "9. Get Withdrawal Requests",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/withdrawals",
+          "host": ["{{base_url}}"],
+          "path": ["withdrawals"]
+        },
+        "description": "Get all withdrawal requests"
+      }
+    },
+    {
+      "name": "10. Update Withdrawal Status",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/withdrawals/:id/status",
+          "host": ["{{base_url}}"],
+          "path": ["withdrawals", ":id", "status"],
+          "variable": [
+            {
+              "key": "id",
+              "value": ""
+            }
+          ]
+        },
+        "description": "Update withdrawal request status (PROCESSING, COMPLETED, REJECTED)"
+      }
+    },
+    {
+      "name": "11. Webhook - Delivery Status",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{webhook_secret}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notification_type\": \"delivery_status\",\n  \"consignment_id\": 12345,\n  \"invoice\": \"INV-20250302-TEST01\",\n  \"cod_amount\": 1500.00,\n  \"status\": \"delivered\",\n  \"delivery_charge\": 60.00,\n  \"tracking_message\": \"Package delivered successfully\",\n  \"updated_at\": \"2025-03-02 15:30:00\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook",
+          "host": ["{{base_url}}"],
+          "path": ["webhook"]
+        },
+        "description": "Test webhook with delivery status update"
+      }
+    },
+    {
+      "name": "12. Webhook - Tracking Update",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{webhook_secret}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notification_type\": \"tracking_update\",\n  \"consignment_id\": 12345,\n  \"invoice\": \"INV-20250302-TEST01\",\n  \"tracking_message\": \"Package arrived at sorting center\",\n  \"updated_at\": \"2025-03-02 13:15:00\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook",
+          "host": ["{{base_url}}"],
+          "path": ["webhook"]
+        },
+        "description": "Test webhook with tracking update"
+      }
+    }
+  ]
+}

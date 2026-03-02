@@ -63,5 +63,11 @@ export default {
     fromEmail: process.env.AWS_FROM_EMAIL,
     s3Bucket: process.env.AWS_S3_BUCKET_NAME,
   },
+  steadfast: {
+    apiKey: process.env.STEADFAST_API_KEY,
+    secretKey: process.env.STEADFAST_SECRET_KEY,
+    baseUrl: process.env.STEADFAST_BASE_URL || 'https://portal.packzy.com/api/v1',
+    webhookSecret: process.env.STEADFAST_WEBHOOK_SECRET,
+  },
   appUrl:  'http://localhost:3002',
 };
