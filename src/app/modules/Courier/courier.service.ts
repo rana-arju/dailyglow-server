@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import steadfastClient from '../../lib/steadfast.client';
 import {
   ICreateShipmentPayload,
@@ -8,8 +8,6 @@ import {
 } from './courier.interface';
 import ApiError from '../../errors/ApiError';
 import httpStatus from 'http-status';
-
-const prisma = new PrismaClient();
 
 const createShipment = async (payload: ICreateShipmentPayload) => {
   // Check if order exists
@@ -53,16 +51,16 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
     // Create order in Steadfast
     const steadfastResponse = await steadfastClient.createOrder({
       invoice,
-      recipient_name: payload.recipientName,
-      recipient_phone: payload.recipientPhone,
-      alternative_phone: payload.alternativePhone,
-      recipient_email: payload.recipientEmail,
-      recipient_address: payload.recipientAddress,
-      cod_amount: payload.codAmount,
+      recipient_name: payload.recipient_name,
+      recipient_phone: payload.recipient_phone,
+      alternative_phone: payload.alternative_phone,
+      recipient_email: payload.recipient_email,
+      recipient_address: payload.recipient_address,
+      cod_amount: payload.cod_amount,
       note: payload.note,
-      item_description: payload.itemDescription,
-      total_lot: payload.totalLot,
-      delivery_type: payload.deliveryType,
+      item_description: payload.item_description,
+      total_lot: payload.total_lot,
+      delivery_type: payload.delivery_type,
     });
 
     // Store shipment in database
@@ -72,17 +70,17 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
         invoice,
         consignmentId: steadfastResponse.consignment.consignment_id.toString(),
         trackingCode: steadfastResponse.consignment.tracking_code,
-        recipientName: payload.recipientName,
-        recipientPhone: payload.recipientPhone,
-        alternativePhone: payload.alternativePhone,
-        recipientEmail: payload.recipientEmail,
-        recipientAddress: payload.recipientAddress,
-        codAmount: payload.codAmount,
+        recipientName: payload.recipient_name,
+        recipientPhone: payload.recipient_phone,
+        alternativePhone: payload.alternative_phone,
+        recipientEmail: payload.recipient_email,
+        recipientAddress: payload.recipient_address,
+        codAmount: payload.cod_amount,
         deliveryStatus: steadfastResponse.consignment.status,
         note: payload.note,
-        itemDescription: payload.itemDescription,
-        totalLot: payload.totalLot,
-        deliveryType: payload.deliveryType || 0,
+        itemDescription: payload.item_description,
+        totalLot: payload.total_lot,
+        deliveryType: payload.delivery_type || 0,
         providerPayload: steadfastResponse as any,
         lastUpdatedAt: new Date(steadfastResponse.consignment.updated_at),
       },
@@ -100,6 +98,16 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
       },
     });
 
+    // Create initial tracking event
+    await prisma.orderTrackingEvent.create({
+      data: {
+        orderId: payload.orderId,
+        status: 'Shipped',
+        note: 'Your order has been shipped and is on the way to you.',
+        timestamp: new Date(steadfastResponse.consignment.updated_at),
+      },
+    });
+
     return shipment;
   } catch (error: any) {
     // Store failed shipment attempt
@@ -107,17 +115,17 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
       data: {
         orderId: payload.orderId,
         invoice,
-        recipientName: payload.recipientName,
-        recipientPhone: payload.recipientPhone,
-        alternativePhone: payload.alternativePhone,
-        recipientEmail: payload.recipientEmail,
-        recipientAddress: payload.recipientAddress,
-        codAmount: payload.codAmount,
+        recipientName: payload.recipient_name,
+        recipientPhone: payload.recipient_phone,
+        alternativePhone: payload.alternative_phone,
+        recipientEmail: payload.recipient_email,
+        recipientAddress: payload.recipient_address,
+        codAmount: payload.cod_amount,
         deliveryStatus: 'failed',
         note: payload.note,
-        itemDescription: payload.itemDescription,
-        totalLot: payload.totalLot,
-        deliveryType: payload.deliveryType || 0,
+        itemDescription: payload.item_description,
+        totalLot: payload.total_lot,
+        deliveryType: payload.delivery_type || 0,
         providerPayload: {
           error: error.message,
           responseData: error.data || null,
@@ -212,6 +220,7 @@ const handleWebhook = async (payload: IWebhookPayload) => {
 
   if (notification_type === 'delivery_status') {
     const deliveryPayload = payload as any;
+    const eventTimestamp = new Date(deliveryPayload.updated_at);
 
     // Update shipment
     const updatedShipment = await prisma.shipment.update({
@@ -220,7 +229,7 @@ const handleWebhook = async (payload: IWebhookPayload) => {
         deliveryStatus: deliveryPayload.status,
         deliveryCharge: deliveryPayload.delivery_charge,
         trackingMessage: deliveryPayload.tracking_message,
-        lastUpdatedAt: new Date(deliveryPayload.updated_at),
+        lastUpdatedAt: eventTimestamp,
       },
     });
 
@@ -233,35 +242,41 @@ const handleWebhook = async (payload: IWebhookPayload) => {
         trackingMessage: deliveryPayload.tracking_message,
         codAmount: deliveryPayload.cod_amount,
         deliveryCharge: deliveryPayload.delivery_charge,
-        updatedAt: new Date(deliveryPayload.updated_at),
+        updatedAt: eventTimestamp,
         rawPayload: payload as any,
       },
     });
 
     // Update order status and note based on delivery status
-    const statusMap: Record<string, { status: string; note: string }> = {
+    const statusMap: Record<string, { status: string; note: string; displayStatus: string }> = {
       delivered: {
         status: 'DELIVERED',
+        displayStatus: 'Delivered',
         note: 'Your order has been delivered successfully. Thank you for shopping with us!'
       },
       partial_delivered: {
         status: 'DELIVERED',
+        displayStatus: 'Delivered',
         note: 'Your order has been partially delivered. Please contact support if you have any questions.'
       },
       cancelled: {
         status: 'CANCELLED',
+        displayStatus: 'Cancelled',
         note: 'Your order has been cancelled. If you have any questions, please contact our support team.'
       },
       hold: {
         status: 'PROCESSING',
+        displayStatus: 'On Hold',
         note: 'Your order is currently on hold. Our team will contact you shortly.'
       },
       pending: {
         status: 'PROCESSING',
+        displayStatus: 'Pending',
         note: 'Your order is being processed and will be shipped soon.'
       },
       in_review: {
         status: 'PROCESSING',
+        displayStatus: 'In Review',
         note: 'Your order is under review and will be processed shortly.'
       },
     };
@@ -274,18 +289,29 @@ const handleWebhook = async (payload: IWebhookPayload) => {
           statusNote: statusMap[deliveryPayload.status].note
         },
       });
+
+      // Create order tracking event
+      await prisma.orderTrackingEvent.create({
+        data: {
+          orderId: shipment.orderId,
+          status: statusMap[deliveryPayload.status].displayStatus,
+          note: deliveryPayload.tracking_message || statusMap[deliveryPayload.status].note,
+          timestamp: eventTimestamp,
+        },
+      });
     }
 
     return updatedShipment;
   } else if (notification_type === 'tracking_update') {
     const trackingPayload = payload as any;
+    const eventTimestamp = new Date(trackingPayload.updated_at);
 
     // Update shipment
     const updatedShipment = await prisma.shipment.update({
       where: { id: shipment.id },
       data: {
         trackingMessage: trackingPayload.tracking_message,
-        lastUpdatedAt: new Date(trackingPayload.updated_at),
+        lastUpdatedAt: eventTimestamp,
       },
     });
 
@@ -295,7 +321,7 @@ const handleWebhook = async (payload: IWebhookPayload) => {
         shipmentId: shipment.id,
         notificationType: notification_type,
         trackingMessage: trackingPayload.tracking_message,
-        updatedAt: new Date(trackingPayload.updated_at),
+        updatedAt: eventTimestamp,
         rawPayload: payload as any,
       },
     });
@@ -305,6 +331,16 @@ const handleWebhook = async (payload: IWebhookPayload) => {
       where: { id: shipment.orderId },
       data: { 
         statusNote: trackingPayload.tracking_message
+      },
+    });
+
+    // Create order tracking event for tracking updates
+    await prisma.orderTrackingEvent.create({
+      data: {
+        orderId: shipment.orderId,
+        status: 'Tracking Update',
+        note: trackingPayload.tracking_message,
+        timestamp: eventTimestamp,
       },
     });
 

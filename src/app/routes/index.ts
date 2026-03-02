@@ -8,6 +8,7 @@ import { CustomerRoutes } from '../modules/Customers/customer.routes';
 import { CustomerAuthRoutes } from '../modules/customerAuth/customerAuth.routes';
 import { DashboardRoutes } from '../modules/Dashboard';
 import { CourierRoutes } from '../modules/Courier';
+import { WebhookRoutes } from '../modules/Webhooks';
 
 const router = express.Router();
 
@@ -44,6 +45,10 @@ const moduleRoutes = [
   {
     path: '/courier',
     route: CourierRoutes,
+  },
+  {
+    path: '/webhooks',
+    route: WebhookRoutes,
   },
 ];
 

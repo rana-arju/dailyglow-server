@@ -78,34 +78,50 @@ model Customer {
 }
 
 model Order {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  orderNumber   String      @unique
-  customerId    String?     @db.ObjectId
-  fullName      String
-  phoneNumber   String
-  city          String
-  thanaUpazila  String?
-  address       String
-  productName   String
-  productPrice  Float
-  originalPrice Float?
-  quantity      Int
-  discount      Float       @default(0)
-  deliveryFee   Float       @default(0)
-  subtotal      Float
-  total         Float
-  status        OrderStatus @default(PENDING)
-  statusNote    String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber    String           @unique
+  customerId     String?          @db.ObjectId
+  fullName       String
+  phoneNumber    String
+  city           String
+  thanaUpazila   String?
+  address        String
+  productName    String
+  productPrice   Float
+  originalPrice  Float?
+  quantity       Int
+  discount       Float            @default(0)
+  deliveryFee    Float            @default(0)
+  subtotal       Float
+  total          Float
+  status         OrderStatus      @default(PENDING)
+  statusNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  shipment Shipment?
+  customer       Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shipment       Shipment?
+  trackingEvents OrderTrackingEvent[]
 
   @@index([customerId])
   @@index([phoneNumber])
   @@index([status])
   @@map("orders")
+}
+
+model OrderTrackingEvent {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  status    String
+  note      String
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([timestamp])
+  @@map("order_tracking_events")
 }
 
 enum OrderStatus {

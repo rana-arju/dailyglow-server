@@ -1,15 +1,16 @@
+// API payload (snake_case from frontend)
 export interface ICreateShipmentPayload {
   orderId: string;
-  recipientName: string;
-  recipientPhone: string;
-  alternativePhone?: string;
-  recipientEmail?: string;
-  recipientAddress: string;
-  codAmount: number;
+  recipient_name: string;
+  recipient_phone: string;
+  alternative_phone?: string;
+  recipient_email?: string;
+  recipient_address: string;
+  cod_amount: number;
   note?: string;
-  itemDescription?: string;
-  totalLot?: number;
-  deliveryType?: 0 | 1;
+  item_description?: string;
+  total_lot?: number;
+  delivery_type?: 0 | 1;
 }
 
 export interface IShipmentReviewData {
