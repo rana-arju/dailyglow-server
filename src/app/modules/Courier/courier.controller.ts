@@ -47,7 +47,7 @@ const getShipmentReviewData = catchAsync(
       recipient_email: order.customer?.email || '',
       recipient_address: `${order.address}, ${order.thanaUpazila || ''}, ${order.city}`.trim(),
       cod_amount: order.total,
-      note: '',
+      note: order.orderNote || '', // Include order note if exists
       item_description: order.productName,
       total_lot: order.quantity,
       delivery_type: 0,
@@ -63,7 +63,22 @@ const getShipmentReviewData = catchAsync(
 );
 
 const createShipment = catchAsync(async (req: Request, res: Response) => {
-  const result = await CourierService.createShipment(req.body);
+  // Transform snake_case to camelCase for service
+  const payload = {
+    orderId: req.body.orderId,
+    recipientName: req.body.recipient_name,
+    recipientPhone: req.body.recipient_phone,
+    alternativePhone: req.body.alternative_phone,
+    recipientEmail: req.body.recipient_email,
+    recipientAddress: req.body.recipient_address,
+    codAmount: req.body.cod_amount,
+    note: req.body.note,
+    itemDescription: req.body.item_description,
+    totalLot: req.body.total_lot,
+    deliveryType: req.body.delivery_type,
+  };
+
+  const result = await CourierService.createShipment(payload);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -214,6 +229,29 @@ const getCustomerOrderTracking = catchAsync(
   }
 );
 
+const getPayments = catchAsync(async (req: Request, res: Response) => {
+  const result = await CourierService.getPayments();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Payments retrieved successfully',
+    data: result,
+  });
+});
+
+const getPaymentById = catchAsync(async (req: Request, res: Response) => {
+  const { paymentId } = req.params;
+  const result = await CourierService.getPaymentById(parseInt(paymentId));
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Payment retrieved successfully',
+    data: result,
+  });
+});
+
 export const CourierController = {
   getShipmentReviewData,
   createShipment,
@@ -227,4 +265,6 @@ export const CourierController = {
   getWithdrawalRequests,
   updateWithdrawalStatus,
   getCustomerOrderTracking,
+  getPayments,
+  getPaymentById,
 };

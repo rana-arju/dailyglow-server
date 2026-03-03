@@ -66,6 +66,7 @@ const createOrder = async (orderData: ICreateOrder) => {
       deliveryFee,
       subtotal,
       total,
+      orderNote: orderData.orderNote,
     },
   });
 

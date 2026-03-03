@@ -83,6 +83,7 @@ interface ReturnRequestResponse {
 class SteadfastClient {
   private client: AxiosInstance;
   private config: SteadfastConfig;
+  private mockMode: boolean;
 
   constructor() {
     this.config = {
@@ -90,6 +91,10 @@ class SteadfastClient {
       secretKey: config.steadfast.secretKey || '',
       baseUrl: config.steadfast.baseUrl || 'https://portal.packzy.com/api/v1',
     };
+
+    // Enable mock mode if STEADFAST_MOCK_MODE is true
+    // Works in any environment (development, production, etc.)
+    this.mockMode = process.env.STEADFAST_MOCK_MODE === 'true';
 
     this.client = axios.create({
       baseURL: this.config.baseUrl,
@@ -100,6 +105,13 @@ class SteadfastClient {
       },
       timeout: 30000,
     });
+
+    if (this.mockMode) {
+      console.log('⚠️  STEADFAST MOCK MODE ENABLED - Using fake responses');
+      console.log('   To use real API, set STEADFAST_MOCK_MODE=false in .env');
+    } else {
+      console.log('✅ STEADFAST LIVE MODE - Using real API');
+    }
   }
 
   private handleError(error: unknown): never {
@@ -116,6 +128,28 @@ class SteadfastClient {
   }
 
   async createOrder(payload: CreateOrderPayload): Promise<CreateOrderResponse> {
+    // Mock response for development
+    if (this.mockMode) {
+      console.log('📦 MOCK: Creating order', payload.invoice);
+      return {
+        status: 200,
+        message: 'Order created successfully (MOCK)',
+        consignment: {
+          consignment_id: Math.floor(Math.random() * 1000000),
+          invoice: payload.invoice,
+          tracking_code: `MOCK-${Date.now()}`,
+          recipient_name: payload.recipient_name,
+          recipient_phone: payload.recipient_phone,
+          recipient_address: payload.recipient_address,
+          cod_amount: payload.cod_amount,
+          status: 'in_review',
+          note: payload.note,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+    }
+
     try {
       const response = await this.client.post<CreateOrderResponse>(
         '/create_order',
@@ -173,6 +207,8 @@ class SteadfastClient {
   }
 
   async getBalance(): Promise<BalanceResponse> {
+
+
     try {
       const response = await this.client.get<BalanceResponse>('/get_balance');
       return response.data;

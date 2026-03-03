@@ -14,6 +14,7 @@ export const createOrderSchema = z.object({
     quantity: z.number().int().positive('Quantity must be a positive integer'),
     discount: z.number().min(0, 'Discount cannot be negative').optional().default(0),
     deliveryFee: z.number().min(0, 'Delivery fee cannot be negative').optional().default(0),
+    orderNote: z.string().max(500, 'Order note must be less than 500 characters').optional(),
   }),
 });
 

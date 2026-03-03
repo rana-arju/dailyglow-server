@@ -59,7 +59,7 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
       recipient_email: payload.recipientEmail,
       recipient_address: payload.recipientAddress,
       cod_amount: payload.codAmount,
-      note: payload.note,
+      note: payload.note || order.orderNote || undefined, // Use shipment note or order note
       item_description: payload.itemDescription,
       total_lot: payload.totalLot,
       delivery_type: payload.deliveryType,
@@ -373,16 +373,9 @@ const assignDeliveryMan = async (payload: IAssignDeliveryMan) => {
 
 const getBalance = async () => {
   try {
+    // Fetch balance directly from STEADFAST API
+    // No need to store in database - it's real-time data
     const balanceResponse = await steadfastClient.getBalance();
-
-    // Store balance snapshot
-    await prisma.courierBalanceSnapshot.create({
-      data: {
-        currentBalance: balanceResponse.current_balance,
-        rawPayload: balanceResponse as any,
-      },
-    });
-
     return balanceResponse;
   } catch (error: any) {
     throw new ApiError(
@@ -474,6 +467,30 @@ const getCustomerOrderTracking = async (orderNumber: string, phoneNumber: string
   };
 };
 
+const getPayments = async () => {
+  try {
+    const paymentsResponse = await steadfastClient.getPayments();
+    return paymentsResponse;
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      error.message || 'Failed to fetch payments'
+    );
+  }
+};
+
+const getPaymentById = async (paymentId: number) => {
+  try {
+    const paymentResponse = await steadfastClient.getPaymentById(paymentId);
+    return paymentResponse;
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      error.message || 'Failed to fetch payment'
+    );
+  }
+};
+
 export const CourierService = {
   createShipment,
   getShipmentByOrderId,
@@ -486,4 +503,6 @@ export const CourierService = {
   getWithdrawalRequests,
   updateWithdrawalStatus,
   getCustomerOrderTracking,
+  getPayments,
+  getPaymentById,
 };

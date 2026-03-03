@@ -37,6 +37,10 @@ router.post(
 
 router.get('/balance', CourierController.getBalance);
 
+router.get('/payments', CourierController.getPayments);
+
+router.get('/payments/:paymentId', CourierController.getPaymentById);
+
 router.post(
   '/withdrawals',
   validateRequest(CourierValidation.withdrawalRequestSchema),

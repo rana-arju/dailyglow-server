@@ -10,6 +10,7 @@ export interface ICreateOrder {
   quantity: number;
   discount?: number;
   deliveryFee?: number;
+  orderNote?: string;
 }
 
 export interface IOrder extends ICreateOrder {
