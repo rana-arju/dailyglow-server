@@ -222,6 +222,14 @@ const getOrderById = async (id: string) => {
           totalSpent: true,
         },
       },
+      shipment: {
+        select: {
+          trackingCode: true,
+          deliveryStatus: true,
+          trackingMessage: true,
+          deliveryCharge: true,
+        },
+      },
     },
   });
 

@@ -2,14 +2,14 @@ export const normalizePhoneNumber = (phoneNumber: string): string => {
   // Remove all non-digit characters
   let normalized = phoneNumber.replace(/\D/g, '');
 
-  // If it starts with 880, remove it
+  // If it starts with 880, remove it and add 0 prefix
   if (normalized.startsWith('880')) {
-    normalized = normalized.substring(3);
+    normalized = '0' + normalized.substring(3);
   }
   
-  // If it starts with 0, remove it (standardizing to 10 digits for BD numbers)
-  if (normalized.startsWith('0')) {
-    normalized = normalized.substring(1);
+  // Ensure it starts with 0 for BD numbers
+  if (!normalized.startsWith('0') && normalized.length === 10) {
+    normalized = '0' + normalized;
   }
 
   return normalized;

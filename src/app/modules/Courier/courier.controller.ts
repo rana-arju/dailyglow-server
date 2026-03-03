@@ -63,22 +63,8 @@ const getShipmentReviewData = catchAsync(
 );
 
 const createShipment = catchAsync(async (req: Request, res: Response) => {
-  // Transform snake_case to camelCase for service
-  const payload = {
-    orderId: req.body.orderId,
-    recipientName: req.body.recipient_name,
-    recipientPhone: req.body.recipient_phone,
-    alternativePhone: req.body.alternative_phone,
-    recipientEmail: req.body.recipient_email,
-    recipientAddress: req.body.recipient_address,
-    codAmount: req.body.cod_amount,
-    note: req.body.note,
-    itemDescription: req.body.item_description,
-    totalLot: req.body.total_lot,
-    deliveryType: req.body.delivery_type,
-  };
-
-  const result = await CourierService.createShipment(payload);
+  // Pass the payload directly - it's already in snake_case from frontend
+  const result = await CourierService.createShipment(req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
