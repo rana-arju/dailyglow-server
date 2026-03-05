@@ -66,6 +66,30 @@ const getDashboardStats = async (filter: DateFilter = 'today') => {
     },
   });
 
+  // Get admin statistics (all time, not filtered by date)
+  const [totalAdmins, activeAdmins, totalSuperAdmins] = await Promise.all([
+    prisma.user.count({
+      where: {
+        role: {
+          in: ['ADMIN', 'SUPERADMIN'],
+        },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        role: {
+          in: ['ADMIN', 'SUPERADMIN'],
+        },
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.user.count({
+      where: {
+        role: 'SUPERADMIN',
+      },
+    }),
+  ]);
+
   // Get filtered orders
   const orders = await prisma.order.findMany({
     where: {
@@ -129,6 +153,11 @@ const getDashboardStats = async (filter: DateFilter = 'today') => {
     totalOrders,
     totalRevenue,
     totalProfit,
+    adminStats: {
+      totalAdmins,
+      activeAdmins,
+      totalSuperAdmins,
+    },
     recentOrders,
     chartData,
   };

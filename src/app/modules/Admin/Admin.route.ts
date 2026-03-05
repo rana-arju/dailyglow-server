@@ -27,4 +27,7 @@ router.patch('/:id/suspend', auth(Role.SUPERADMIN), AdminController.suspendAdmin
 // Activate admin (only SUPERADMIN)
 router.patch('/:id/activate', auth(Role.SUPERADMIN), AdminController.activateAdmin);
 
+// Delete admin (only SUPERADMIN)
+router.delete('/:id', auth(Role.SUPERADMIN), AdminController.deleteAdmin);
+
 export const AdminRoutes = router;

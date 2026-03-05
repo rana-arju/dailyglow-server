@@ -82,10 +82,23 @@ const activateAdmin = catchAsync(async (req: Request & { user?: any }, res: Resp
   });
 });
 
+const deleteAdmin = catchAsync(async (req: Request & { user?: any }, res: Response) => {
+  const { id } = req.params;
+  const data = await AdminService.deleteAdmin(id, req.user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Admin deleted successfully!',
+    data,
+  });
+});
+
 export const AdminController = {
   getAllAdmins,
   getAdminById,
   createAdmin,
   suspendAdmin,
   activateAdmin,
+  deleteAdmin,
 };

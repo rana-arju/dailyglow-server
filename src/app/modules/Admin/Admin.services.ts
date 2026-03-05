@@ -273,10 +273,58 @@ const activateAdmin = async (id: string, actorId: string) => {
   return updatedAdmin;
 };
 
+const deleteAdmin = async (id: string, actorId: string) => {
+  // Check if actor is SUPERADMIN
+  const actor = await prisma.user.findUnique({
+    where: { id: actorId },
+    select: { role: true },
+  });
+
+  if (actor?.role !== Role.SUPERADMIN) {
+    throw new ApiError(httpStatus.FORBIDDEN, 'Only superadmins can delete admins');
+  }
+
+  // Check if target admin exists
+  const admin = await prisma.user.findUnique({
+    where: {
+      id,
+      role: {
+        in: [Role.ADMIN, Role.SUPERADMIN],
+      },
+    },
+  });
+
+  if (!admin) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Admin not found');
+  }
+
+  // Prevent deleting self
+  if (id === actorId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'You cannot delete yourself');
+  }
+
+  // Soft delete the admin
+  const deletedAdmin = await prisma.user.update({
+    where: { id },
+    data: { isDeleted: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+      updatedAt: true,
+    },
+  });
+
+  return deletedAdmin;
+};
+
 export const AdminService = {
   getAllAdmins,
   getAdminById,
   createAdmin,
   suspendAdmin,
   activateAdmin,
+  deleteAdmin,
 };
