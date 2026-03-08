@@ -48,7 +48,7 @@ const createOrder = async (orderData: ICreateOrder) => {
     });
   }
 
-  // Create order linked to customer
+  // Create order linked to customer with initial tracking event
   const order = await prisma.order.create({
     data: {
       orderNumber,
@@ -67,6 +67,12 @@ const createOrder = async (orderData: ICreateOrder) => {
       subtotal,
       total,
       orderNote: orderData.orderNote,
+      trackingEvents: {
+        create: {
+          status: 'Order Placed',
+          note: 'Your order is successfully placed to Arogga. Order id #' + orderNumber,
+        },
+      },
     },
   });
 
@@ -230,6 +236,11 @@ const getOrderById = async (id: string) => {
           deliveryCharge: true,
         },
       },
+      trackingEvents: {
+        orderBy: {
+          timestamp: 'asc',
+        },
+      },
     },
   });
 
@@ -237,9 +248,55 @@ const getOrderById = async (id: string) => {
 };
 
 const updateOrderStatus = async (id: string, status: OrderStatus) => {
+  // Get status messages
+  const statusMessages: Record<OrderStatus, { status: string; note: string }> = {
+    PENDING: {
+      status: 'Pending',
+      note: 'Your order is pending for confirmation. Will confirmed within 5 minutes',
+    },
+    CONFIRMED: {
+      status: 'Confirmed',
+      note: 'We have confirmed your order.',
+    },
+    PROCESSING: {
+      status: 'Packing',
+      note: 'We are currently packing your order.',
+    },
+    SHIPPED: {
+      status: 'Delivering',
+      note: 'Your order is on the way for delivery.',
+    },
+    DELIVERED: {
+      status: 'Delivered',
+      note: 'You have received your order.',
+    },
+    CANCELLED: {
+      status: 'Cancelled',
+      note: 'Your order has been cancelled.',
+    },
+  };
+
+  const message = statusMessages[status];
+
+  // Update order status and create tracking event
   const order = await prisma.order.update({
     where: { id },
-    data: { status },
+    data: {
+      status,
+      trackingEvents: {
+        create: {
+          status: message.status,
+          note: message.note,
+        },
+      },
+    },
+    include: {
+      trackingEvents: {
+        orderBy: {
+          timestamp: 'asc',
+        },
+      },
+    },
   });
 
   return order;
@@ -262,6 +319,43 @@ const deleteOrder = async (id: string) => {
   return order;
 };
 
+const trackOrder = async (orderNumber: string, phoneNumber: string) => {
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
+  
+  const order = await prisma.order.findFirst({
+    where: {
+      orderNumber,
+      phoneNumber: normalizedPhone,
+    },
+    include: {
+      customer: {
+        select: {
+          id: true,
+          fullName: true,
+          phoneNumber: true,
+          totalOrders: true,
+          totalSpent: true,
+        },
+      },
+      shipment: {
+        select: {
+          trackingCode: true,
+          deliveryStatus: true,
+          trackingMessage: true,
+          deliveryCharge: true,
+        },
+      },
+      trackingEvents: {
+        orderBy: {
+          timestamp: 'asc',
+        },
+      },
+    },
+  });
+
+  return order;
+};
+
 export const OrderService = {
   createOrder,
   getAllOrders,
@@ -269,4 +363,5 @@ export const OrderService = {
   updateOrderStatus,
   updateOrder,
   deleteOrder,
+  trackOrder,
 };

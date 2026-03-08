@@ -27,6 +27,8 @@ router.get('/shipments', CourierController.getAllShipments);
 
 router.get('/shipments/order/:orderId', CourierController.getShipmentByOrderId);
 
+router.delete('/shipments/:shipmentId', CourierController.deleteShipment);
+
 router.post('/shipments/:shipmentId/sync', CourierController.syncShipmentStatus);
 
 router.post(

@@ -238,6 +238,18 @@ const getPaymentById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteShipment = catchAsync(async (req: Request, res: Response) => {
+  const { shipmentId } = req.params;
+  const result = await CourierService.deleteShipment(shipmentId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: result.shipment,
+  });
+});
+
 export const CourierController = {
   getShipmentReviewData,
   createShipment,
@@ -253,4 +265,5 @@ export const CourierController = {
   getCustomerOrderTracking,
   getPayments,
   getPaymentById,
+  deleteShipment,
 };

@@ -97,6 +97,40 @@ const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const trackOrder = catchAsync(async (req: Request, res: Response) => {
+  const { orderNumber, phoneNumber } = req.query;
+
+  if (!orderNumber || !phoneNumber) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'Order number and phone number are required',
+      data: null,
+    });
+  }
+
+  const result = await OrderService.trackOrder(
+    orderNumber as string,
+    phoneNumber as string
+  );
+
+  if (!result) {
+    return sendResponse(res, {
+      statusCode: httpStatus.NOT_FOUND,
+      success: false,
+      message: 'Order not found',
+      data: null,
+    });
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Order retrieved successfully',
+    data: result,
+  });
+});
+
 export const OrderController = {
   createOrder,
   getAllOrders,
@@ -104,4 +138,5 @@ export const OrderController = {
   updateOrderStatus,
   updateOrder,
   deleteOrder,
+  trackOrder,
 };

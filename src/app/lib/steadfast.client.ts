@@ -279,6 +279,29 @@ class SteadfastClient {
       this.handleError(error);
     }
   }
+
+  async cancelOrder(consignmentId: number, reason?: string): Promise<any> {
+    if (this.mockMode) {
+      console.log('🗑️ MOCK: Cancelling order', consignmentId);
+      return {
+        status: 200,
+        message: 'Order cancelled successfully (MOCK)',
+      };
+    }
+
+
+    try {
+      // Create return request to cancel the order
+      const response = await this.createReturnRequest({
+        consignment_id: consignmentId,
+        reason: reason || 'Cancelled by admin',
+      });
+      
+      return response;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
 }
 
 export default new SteadfastClient();

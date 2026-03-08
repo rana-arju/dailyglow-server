@@ -81,12 +81,18 @@ const createShipment = async (payload: ICreateShipmentPayload) => {
       },
     });
 
-    // Update order status to SHIPPED with note
+    // Update order status to SHIPPED with tracking event
     await prisma.order.update({
       where: { id: payload.orderId },
       data: {
         status: 'SHIPPED',
         statusNote: 'Your order has been shipped and is on the way to you.',
+        trackingEvents: {
+          create: {
+            status: 'Delivering',
+            note: `Your order is on the way for delivery. Tracking Code: ${steadfastResponse.consignment.tracking_code}`,
+          },
+        },
       },
     });
 
@@ -260,11 +266,18 @@ const handleWebhook = async (payload: IWebhookPayload) => {
     };
 
     if (statusMap[deliveryPayload.status]) {
+      const statusInfo = statusMap[deliveryPayload.status];
       await prisma.order.update({
         where: { id: shipment.orderId },
         data: {
-          status: statusMap[deliveryPayload.status].status as any,
-          statusNote: statusMap[deliveryPayload.status].note,
+          status: statusInfo.status as any,
+          statusNote: statusInfo.note,
+          trackingEvents: {
+            create: {
+              status: statusInfo.displayStatus,
+              note: statusInfo.note,
+            },
+          },
         },
       });
     }
@@ -470,6 +483,108 @@ const getPaymentById = async (paymentId: number) => {
   }
 };
 
+const deleteShipment = async (shipmentId: string) => {
+  console.log('🗑️ Deleting shipment:', shipmentId);
+  
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+    include: { order: true },
+  });
+
+  if (!shipment) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Shipment not found');
+  }
+
+  console.log('📦 Shipment found:', {
+    id: shipment.id,
+    consignmentId: shipment.consignmentId,
+    invoice: shipment.invoice,
+    status: shipment.deliveryStatus,
+  });
+
+  // Check if shipment is already delivered
+  if (shipment.deliveryStatus === 'delivered' || shipment.deliveryStatus === 'partial_delivered') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Cannot delete delivered shipment');
+  }
+
+  try {
+    // Cancel in Steadfast if consignment ID exists
+    if (shipment.consignmentId) {
+      console.log('🗑️ Cancelling in Steadfast...');
+      await steadfastClient.cancelOrder(
+        parseInt(shipment.consignmentId),
+        'Cancelled by admin from dashboard'
+      );
+    } else {
+      console.log('⚠️ No consignment ID, skipping Steadfast cancellation');
+    }
+
+    // Update shipment status to cancelled
+    const updatedShipment = await prisma.shipment.update({
+      where: { id: shipmentId },
+      data: {
+        deliveryStatus: 'cancelled',
+        trackingMessage: 'Shipment cancelled by admin',
+        lastUpdatedAt: new Date(),
+      },
+    });
+
+
+    // Update order status back to CANCELLED with tracking event
+    await prisma.order.update({
+      where: { id: shipment.orderId },
+      data: {
+        status: 'CANCELLED',
+        statusNote: 'Shipment has been cancelled. Please contact support if you have any questions.',
+        trackingEvents: {
+          create: {
+            status: 'Cancelled',
+            note: 'Your shipment has been cancelled. Please contact support if you have any questions.',
+          },
+        },
+      },
+    });
+
+
+    return {
+      message: 'Shipment cancelled successfully',
+      shipment: updatedShipment,
+    };
+  } catch (error: any) {
+    
+    // If Steadfast cancellation fails, still update local status
+    if (error.status === 404 || error.message?.includes('not found')) {
+      
+      const updatedShipment = await prisma.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          deliveryStatus: 'cancelled',
+          trackingMessage: 'Shipment cancelled by admin (not found in Steadfast)',
+          lastUpdatedAt: new Date(),
+        },
+      });
+
+      await prisma.order.update({
+        where: { id: shipment.orderId },
+        data: {
+          status: 'CANCELLED',
+          statusNote: 'Shipment has been cancelled.',
+        },
+      });
+
+      return {
+        message: 'Shipment cancelled locally (not found in Steadfast)',
+        shipment: updatedShipment,
+      };
+    }
+
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      error.message || 'Failed to cancel shipment'
+    );
+  }
+};
+
 export const CourierService = {
   createShipment,
   getShipmentByOrderId,
@@ -484,4 +599,5 @@ export const CourierService = {
   getCustomerOrderTracking,
   getPayments,
   getPaymentById,
+  deleteShipment,
 };

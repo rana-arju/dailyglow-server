@@ -12,6 +12,9 @@ router.post(
   OrderController.createOrder
 );
 
+// Track order (public route)
+router.get('/track', OrderController.trackOrder);
+
 // Get all orders (admin route - add auth middleware if needed)
 router.get('/', OrderController.getAllOrders);
 
